@@ -21,20 +21,20 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ==================== MODELOS DE DATOS ====================
-
+// Modelado de datos : No es persistente
 class Mesa {
   final int id;
   final int numero;
   final int capacidad;
-  bool reservada;
 
-  Mesa({
-    required this.id,
-    required this.numero,
-    required this.capacidad,
-    this.reservada = false,
-  });
+  Mesa({required this.id, required this.numero, required this.capacidad});
+
+  // este metodo es indica si el estado de la mesa es reservado o no
+  bool estaReservada(String fecha) {
+    return reservasActivas.any(
+      (reserva) => reserva.mesa.id == id && reserva.fecha == fecha,
+    );
+  }
 }
 
 class ElementoMenu {
@@ -78,7 +78,7 @@ class Reserva {
 List<Mesa> mesas = [
   Mesa(id: 1, numero: 1, capacidad: 2),
   Mesa(id: 2, numero: 2, capacidad: 4),
-  Mesa(id: 3, numero: 3, capacidad: 2, reservada: true),
+  Mesa(id: 3, numero: 3, capacidad: 2),
   Mesa(id: 4, numero: 4, capacidad: 6),
   Mesa(id: 5, numero: 5, capacidad: 4),
   Mesa(id: 6, numero: 6, capacidad: 8),
@@ -120,7 +120,7 @@ List<ElementoMenu> menuRestaurant = [
 
 List<Reserva> reservasActivas = [];
 
-// ==================== PANTALLA 1: INICIO - SELECCIÓN DE MESAS ====================
+// ==================== PANTALLA 1: INICIO - SELECCIÓN DE FECHA Y MESAS ====================
 
 class PantallaInicio extends StatefulWidget {
   const PantallaInicio({Key? key}) : super(key: key);
@@ -130,6 +130,16 @@ class PantallaInicio extends StatefulWidget {
 }
 
 class _PantallaInicioState extends State<PantallaInicio> {
+  String _fechaSeleccionada = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Establecer fecha de hoy por defecto
+    final hoy = DateTime.now();
+    _fechaSeleccionada = '${hoy.day}/${hoy.month}/${hoy.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,17 +170,52 @@ class _PantallaInicioState extends State<PantallaInicio> {
         ),
         child: Column(
           children: [
+            // Selector de fecha
             Container(
               padding: const EdgeInsets.all(16),
               color: Colors.orange.shade100,
-              child: Row(
-                children: const [
-                  Icon(Icons.info_outline, color: Colors.orange),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Seleccione una mesa disponible para hacer su reserva',
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Column(
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.info_outline, color: Colors.orange),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Seleccione primero la fecha, luego una mesa disponible',
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.calendar_today,
+                        color: Colors.orange,
+                      ),
+                      title: Text(
+                        'Fecha: $_fechaSeleccionada',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () async {
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 90),
+                          ),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _fechaSeleccionada =
+                                '${picked.day}/${picked.month}/${picked.year}';
+                          });
+                        }
+                      },
                     ),
                   ),
                 ],
@@ -182,9 +227,11 @@ class _PantallaInicioState extends State<PantallaInicio> {
                 itemCount: mesas.length,
                 itemBuilder: (context, index) {
                   final mesa = mesas[index];
+                  final estaReservada = mesa.estaReservada(_fechaSeleccionada);
+
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
-                    elevation: mesa.reservada ? 1 : 4,
+                    elevation: estaReservada ? 1 : 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
@@ -192,12 +239,12 @@ class _PantallaInicioState extends State<PantallaInicio> {
                       contentPadding: const EdgeInsets.all(16),
                       leading: CircleAvatar(
                         radius: 30,
-                        backgroundColor: mesa.reservada
+                        backgroundColor: estaReservada
                             ? Colors.grey.shade300
                             : Colors.orange.shade100,
                         child: Icon(
                           Icons.table_restaurant,
-                          color: mesa.reservada ? Colors.grey : Colors.orange,
+                          color: estaReservada ? Colors.grey : Colors.orange,
                           size: 30,
                         ),
                       ),
@@ -206,14 +253,28 @@ class _PantallaInicioState extends State<PantallaInicio> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
-                          color: mesa.reservada ? Colors.grey : Colors.black,
+                          color: estaReservada ? Colors.grey : Colors.black,
                         ),
                       ),
-                      subtitle: Text(
-                        'Capacidad: ${mesa.capacidad} personas',
-                        style: TextStyle(
-                          color: mesa.reservada ? Colors.grey : Colors.black54,
-                        ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Capacidad: ${mesa.capacidad} personas',
+                            style: TextStyle(
+                              color: estaReservada
+                                  ? Colors.grey
+                                  : Colors.black54,
+                            ),
+                          ),
+                          Text(
+                            'Fecha: $_fechaSeleccionada',
+                            style: TextStyle(
+                              color: estaReservada ? Colors.grey : Colors.blue,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                       trailing: Container(
                         padding: const EdgeInsets.symmetric(
@@ -221,15 +282,15 @@ class _PantallaInicioState extends State<PantallaInicio> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: mesa.reservada
+                          color: estaReservada
                               ? Colors.red.shade100
                               : Colors.green.shade100,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          mesa.reservada ? 'Reservada' : 'Disponible',
+                          estaReservada ? 'Reservada' : 'Disponible',
                           style: TextStyle(
-                            color: mesa.reservada
+                            color: estaReservada
                                 ? Colors.red.shade700
                                 : Colors.green.shade700,
                             fontWeight: FontWeight.bold,
@@ -237,14 +298,16 @@ class _PantallaInicioState extends State<PantallaInicio> {
                           ),
                         ),
                       ),
-                      onTap: mesa.reservada
+                      onTap: estaReservada
                           ? null
                           : () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      PantallaFormulario(mesa: mesa),
+                                  builder: (context) => PantallaFormulario(
+                                    mesa: mesa,
+                                    fechaPreseleccionada: _fechaSeleccionada,
+                                  ),
                                 ),
                               ).then((_) => setState(() {}));
                             },
@@ -264,7 +327,13 @@ class _PantallaInicioState extends State<PantallaInicio> {
 
 class PantallaFormulario extends StatefulWidget {
   final Mesa mesa;
-  const PantallaFormulario({Key? key, required this.mesa}) : super(key: key);
+  final String fechaPreseleccionada;
+
+  const PantallaFormulario({
+    Key? key,
+    required this.mesa,
+    required this.fechaPreseleccionada,
+  }) : super(key: key);
 
   @override
   State<PantallaFormulario> createState() => _PantallaFormularioState();
@@ -276,6 +345,12 @@ class _PantallaFormularioState extends State<PantallaFormulario> {
   final _telefonoController = TextEditingController();
   String _fecha = '';
   String _hora = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fecha = widget.fechaPreseleccionada;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -324,6 +399,24 @@ class _PantallaFormularioState extends State<PantallaFormulario> {
                             style: const TextStyle(
                               fontSize: 16,
                               color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Fecha: $_fecha',
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -391,33 +484,19 @@ class _PantallaFormularioState extends State<PantallaFormulario> {
                               color: Colors.orange,
                             ),
                             title: Text(
-                              _fecha.isEmpty ? 'Seleccionar Fecha' : _fecha,
-                              style: TextStyle(
-                                color: _fecha.isEmpty
-                                    ? Colors.grey
-                                    : Colors.black,
+                              'Fecha: $_fecha',
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios,
-                              size: 16,
+                            subtitle: const Text(
+                              'Fecha preseleccionada',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
                             ),
-                            onTap: () async {
-                              final DateTime? picked = await showDatePicker(
-                                context: context,
-                                initialDate: DateTime.now(),
-                                firstDate: DateTime.now(),
-                                lastDate: DateTime.now().add(
-                                  const Duration(days: 90),
-                                ),
-                              );
-                              if (picked != null) {
-                                setState(() {
-                                  _fecha =
-                                      '${picked.day}/${picked.month}/${picked.year}';
-                                });
-                              }
-                            },
                           ),
                           const Divider(),
                           ListTile(
@@ -543,7 +622,6 @@ class _PantallaFormularioState extends State<PantallaFormulario> {
 
     setState(() {
       reservasActivas.add(reserva);
-      widget.mesa.reservada = true;
     });
 
     Navigator.popUntil(context, (route) => route.isFirst);
@@ -623,19 +701,31 @@ class _PantallaMenuState extends State<PantallaMenu> {
             Container(
               padding: const EdgeInsets.all(16),
               color: Colors.orange.shade100,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  const Text(
-                    'Seleccione los platos (Opcional)',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Seleccione los platos (Opcional)',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Total: ₲${calcularTotal().toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 8),
                   Text(
-                    'Total: ₲${calcularTotal().toStringAsFixed(0)}',
+                    'Mesa ${widget.mesa.numero} - ${widget.fecha}',
                     style: const TextStyle(
+                      color: Colors.blue,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.orange,
                     ),
                   ),
                 ],
@@ -756,7 +846,6 @@ class _PantallaMenuState extends State<PantallaMenu> {
 
     setState(() {
       reservasActivas.add(reserva);
-      widget.mesa.reservada = true;
     });
 
     Navigator.popUntil(context, (route) => route.isFirst);
@@ -786,6 +875,14 @@ class PantallaReservas extends StatefulWidget {
 class _PantallaReservasState extends State<PantallaReservas> {
   @override
   Widget build(BuildContext context) {
+    // Ordenar reservas por fecha
+    final reservasOrdenadas = List<Reserva>.from(reservasActivas);
+    reservasOrdenadas.sort((a, b) {
+      final fechaA = _parsearFecha(a.fecha);
+      final fechaB = _parsearFecha(b.fecha);
+      return fechaA.compareTo(fechaB);
+    });
+
     return Scaffold(
       appBar: AppBar(title: const Text('Mis Reservas')),
       body: Container(
@@ -796,7 +893,7 @@ class _PantallaReservasState extends State<PantallaReservas> {
             colors: [Colors.orange.shade50, Colors.red.shade50],
           ),
         ),
-        child: reservasActivas.isEmpty
+        child: reservasOrdenadas.isEmpty
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -812,9 +909,15 @@ class _PantallaReservasState extends State<PantallaReservas> {
               )
             : ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: reservasActivas.length,
+                itemCount: reservasOrdenadas.length,
                 itemBuilder: (context, index) {
-                  final reserva = reservasActivas[index];
+                  final reserva = reservasOrdenadas[index];
+                  final fechaReserva = _parsearFecha(reserva.fecha);
+                  final hoy = DateTime.now();
+                  final esPasada = fechaReserva.isBefore(
+                    DateTime(hoy.year, hoy.month, hoy.day),
+                  );
+
                   return Card(
                     margin: const EdgeInsets.only(bottom: 16),
                     elevation: 4,
@@ -845,22 +948,46 @@ class _PantallaReservasState extends State<PantallaReservas> {
                                   ),
                                 ],
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.shade100,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  'Mesa ${reserva.mesa.numero}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange,
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade100,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      'Mesa ${reserva.mesa.numero}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  if (esPasada) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      child: const Text(
+                                        'Pasada',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
@@ -885,7 +1012,13 @@ class _PantallaReservasState extends State<PantallaReservas> {
                                 color: Colors.grey,
                               ),
                               const SizedBox(width: 8),
-                              Text('${reserva.fecha} - ${reserva.hora}'),
+                              Text(
+                                '${reserva.fecha} - ${reserva.hora}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: esPasada ? Colors.grey : Colors.black,
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -953,20 +1086,39 @@ class _PantallaReservasState extends State<PantallaReservas> {
                             ),
                           ],
                           const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              _mostrarDialogoCancelar(reserva);
-                            },
-                            icon: const Icon(Icons.cancel),
-                            label: const Text('Cancelar Reserva'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              minimumSize: const Size(double.infinity, 40),
-                              shape: RoundedRectangleBorder(
+                          if (!esPasada)
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                _mostrarDialogoCancelar(reserva);
+                              },
+                              icon: const Icon(Icons.cancel),
+                              label: const Text('Cancelar Reserva'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                minimumSize: const Size(double.infinity, 40),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            )
+                          else
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
                                 borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: const Text(
+                                'Reserva completada',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -977,6 +1129,15 @@ class _PantallaReservasState extends State<PantallaReservas> {
     );
   }
 
+  DateTime _parsearFecha(String fecha) {
+    final partes = fecha.split('/');
+    return DateTime(
+      int.parse(partes[2]), // año
+      int.parse(partes[1]), // mes
+      int.parse(partes[0]), // día
+    );
+  }
+
   void _mostrarDialogoCancelar(Reserva reserva) {
     showDialog(
       context: context,
@@ -984,7 +1145,7 @@ class _PantallaReservasState extends State<PantallaReservas> {
         return AlertDialog(
           title: const Text('Cancelar Reserva'),
           content: Text(
-            '¿Está seguro que desea cancelar la reserva de ${reserva.nombreCliente}?',
+            '¿Está seguro que desea cancelar la reserva de ${reserva.nombreCliente} para el ${reserva.fecha}?',
           ),
           actions: [
             TextButton(
@@ -997,7 +1158,6 @@ class _PantallaReservasState extends State<PantallaReservas> {
               onPressed: () {
                 setState(() {
                   reservasActivas.remove(reserva);
-                  reserva.mesa.reservada = false;
                 });
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
