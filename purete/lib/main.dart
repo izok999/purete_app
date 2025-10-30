@@ -14,6 +14,21 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.orange,
         visualDensity: VisualDensity.adaptivePlatformDensity,
+        // Agregar estas líneas para mejorar el tema
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.deepOrange,
+          foregroundColor: Colors.white,
+          elevation: 4,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.deepOrange,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
       ),
       home: const PantallaInicio(),
       debugShowCheckedModeBanner: false,
@@ -135,10 +150,12 @@ class _PantallaInicioState extends State<PantallaInicio> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('🍽️ Reservas Restaurant'),
-        elevation: 0,
+        elevation: 4, // Cambiar de 0 a 4
+        centerTitle: true, // Centrar el título
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt),
+            tooltip: 'Ver Reservas', // Agregar tooltip
             onPressed: () {
               Navigator.push(
                 context,
@@ -162,15 +179,24 @@ class _PantallaInicioState extends State<PantallaInicio> {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.orange.shade100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.orange.shade200, Colors.orange.shade100],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+              ),
               child: Row(
-                children: const [
-                  Icon(Icons.info_outline, color: Colors.orange),
-                  SizedBox(width: 10),
-                  Expanded(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange.shade800),
+                  const SizedBox(width: 10),
+                  const Expanded(
                     child: Text(
                       'Seleccione una mesa disponible para hacer su reserva',
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -184,7 +210,8 @@ class _PantallaInicioState extends State<PantallaInicio> {
                   final mesa = mesas[index];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
-                    elevation: mesa.reservada ? 1 : 4,
+                    elevation: mesa.reservada ? 2 : 6, // Cambiar elevación
+                    shadowColor: Colors.orange.withOpacity(0.3), // Agregar color de sombra
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
@@ -353,10 +380,17 @@ class _PantallaFormularioState extends State<PantallaFormulario> {
                             controller: _nombreController,
                             decoration: InputDecoration(
                               labelText: 'Nombre Completo',
-                              prefixIcon: const Icon(Icons.person),
+                              prefixIcon: const Icon(Icons.person, color: Colors.deepOrange), // Cambiar color
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12), // Más redondeado
+                                borderSide: BorderSide(color: Colors.orange.shade300),
                               ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Colors.deepOrange, width: 2),
+                              ),
+                              filled: true,
+                              fillColor: Colors.orange.shade50, // Agregar color de fondo
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -456,40 +490,52 @@ class _PantallaFormularioState extends State<PantallaFormulario> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate() &&
-                          _fecha.isNotEmpty &&
-                          _hora.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PantallaMenu(
-                              mesa: widget.mesa,
-                              nombre: _nombreController.text,
-                              telefono: _telefonoController.text,
-                              fecha: _fecha,
-                              hora: _hora,
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.deepOrange, Colors.orange.shade600],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate() &&
+                            _fecha.isNotEmpty &&
+                            _hora.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PantallaMenu(
+                                mesa: widget.mesa,
+                                nombre: _nombreController.text,
+                                telefono: _telefonoController.text,
+                                fecha: _fecha,
+                                hora: _hora,
+                              ),
                             ),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Por favor complete todos los campos',
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Por favor complete todos los campos',
+                              ),
+                              backgroundColor: Colors.red,
                             ),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.restaurant_menu),
-                    label: const Text('Continuar al Menú (Opcional)'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.restaurant_menu),
+                      label: const Text('Continuar al Menú (Opcional)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent, // Transparente para mostrar gradiente
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.all(16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -604,6 +650,21 @@ class _PantallaMenuState extends State<PantallaMenu> {
     return agrupado;
   }
 
+  IconData _getIconoCategoria(String categoria) {
+    switch (categoria) {
+      case 'Entrada':
+        return Icons.restaurant;
+      case 'Plato Principal':
+        return Icons.dinner_dining;
+      case 'Postre':
+        return Icons.cake;
+      case 'Bebida':
+        return Icons.local_drink;
+      default:
+        return Icons.restaurant_menu;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final menuAgrupado = agruparPorCategoria();
@@ -656,7 +717,11 @@ class _PantallaMenuState extends State<PantallaMenu> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade100,
+                            gradient: LinearGradient(
+                              colors: [Colors.orange.shade200, Colors.orange.shade100],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(15),
                               topRight: Radius.circular(15),
@@ -664,9 +729,9 @@ class _PantallaMenuState extends State<PantallaMenu> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
-                                Icons.restaurant,
-                                color: Colors.orange,
+                              Icon(
+                                _getIconoCategoria(entry.key), // Usar función helper
+                                color: Colors.deepOrange,
                               ),
                               const SizedBox(width: 10),
                               Text(
@@ -674,6 +739,7 @@ class _PantallaMenuState extends State<PantallaMenu> {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
                                 ),
                               ),
                             ],
