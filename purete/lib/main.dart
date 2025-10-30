@@ -73,8 +73,7 @@ class Reserva {
   });
 }
 
-// ==================== DATOS GLOBALES ====================
-
+// modelamos nuestros objetos
 List<Mesa> mesas = [
   Mesa(id: 1, numero: 1, capacidad: 2),
   Mesa(id: 2, numero: 2, capacidad: 4),
@@ -120,8 +119,7 @@ List<ElementoMenu> menuRestaurant = [
 
 List<Reserva> reservasActivas = [];
 
-// ==================== PANTALLA 1: INICIO - SELECCIÓN DE FECHA Y MESAS ====================
-
+//  Selección de mesas . esta es la pantalla principal
 class PantallaInicio extends StatefulWidget {
   const PantallaInicio({Key? key}) : super(key: key);
 
@@ -323,7 +321,7 @@ class _PantallaInicioState extends State<PantallaInicio> {
   }
 }
 
-// ==================== PANTALLA 2: FORMULARIO DE RESERVA ====================
+// FORMULARIO DE RESERVA
 
 class PantallaFormulario extends StatefulWidget {
   final Mesa mesa;
@@ -642,7 +640,7 @@ class _PantallaFormularioState extends State<PantallaFormulario> {
   }
 }
 
-// ==================== PANTALLA 3: SELECCIÓN DE MENÚ ====================
+// pantalla de selección de menú
 
 class PantallaMenu extends StatefulWidget {
   final Mesa mesa;
@@ -863,7 +861,7 @@ class _PantallaMenuState extends State<PantallaMenu> {
   }
 }
 
-// ==================== PANTALLA 4: LISTA DE RESERVAS ====================
+// dashboard de reservas
 
 class PantallaReservas extends StatefulWidget {
   const PantallaReservas({Key? key}) : super(key: key);
